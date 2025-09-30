@@ -694,6 +694,10 @@
           <button id="start-live-quiz" class="btn btn-neutral w-full">Start Live Quiz</button>
           <button id="view-results" class="btn btn-neutral w-full">View Results & Stats</button>
         </div>
+        
+        <div class="mt-6 text-center">
+          <button id="back-to-prof-home" class="btn btn-neutral">← Back to Classes</button>
+        </div>
       </div>
     </div>
 
@@ -952,6 +956,8 @@
       document.getElementById('quiz-management').addEventListener('click', () => showPage('quiz-management'));
       document.getElementById('create-quiz').addEventListener('click', () => showPage('create-quiz-page'));
       document.getElementById('start-live-quiz').addEventListener('click', () => showPage('live-quiz-control'));
+      document.getElementById('search-edit-quiz').addEventListener('click', () => showPage('quiz-management'));
+      document.getElementById('view-results').addEventListener('click', () => showPage('final-results'));
 
       // Logout
       document.getElementById('logout-btn').addEventListener('click', () => {
@@ -966,6 +972,11 @@
         } else {
           showPage('professor-home');
         }
+      });
+
+      // Professor back navigation
+      document.getElementById('back-to-prof-home').addEventListener('click', () => {
+        showPage('professor-home');
       });
 
       // Cancel create quiz
@@ -996,9 +1007,10 @@
       const quiz = appState.currentQuiz;
       const question = quiz.questions[appState.currentQuestion];
       
-      // Reset state
-      appState.isAnswerSubmitted = false;
-      appState.showFeedback = false;
+      // Check if this question was already answered
+      const existingAnswer = appState.userAnswers.find(a => a.questionId === question.id);
+      appState.isAnswerSubmitted = !!existingAnswer;
+      appState.showFeedback = !!existingAnswer;
       
       // Update UI
       document.getElementById('question-counter').textContent = `Q${appState.currentQuestion + 1} of ${quiz.questions.length}`;
@@ -1036,16 +1048,23 @@
       // Generate options
       generateQuestionOptions(question);
       
+      // Restore previous answer if exists
+      if (existingAnswer) {
+        restorePreviousAnswer(question, existingAnswer.answer);
+        showAnswerFeedback(question, existingAnswer.answer, existingAnswer.correct);
+        updateUIAfterSubmission();
+      }
+      
       // Update navigation buttons
       updateNavigationButtons();
       
-      // Hide feedback
-      document.getElementById('answer-feedback').style.display = 'none';
-      
-      // Reset buttons
-      document.getElementById('submit-answer').disabled = true;
-      document.getElementById('next-question').style.display = 'none';
-      document.getElementById('mobile-next').style.display = 'none';
+      // Reset buttons if no previous answer
+      if (!existingAnswer) {
+        document.getElementById('submit-answer').disabled = true;
+        document.getElementById('next-question').style.display = 'none';
+        document.getElementById('mobile-next').style.display = 'none';
+        document.getElementById('answer-feedback').style.display = 'none';
+      }
     }
 
     function generateProgressDots() {
@@ -1139,8 +1158,10 @@
               optionDiv.querySelector('.w-6').style.borderColor = '#D1D5DB';
             }
             
-            document.getElementById('submit-answer').disabled = false;
-            document.getElementById('mobile-submit').disabled = false;
+            // Enable submit button if at least one option is selected
+            const hasSelection = document.querySelectorAll('input[name="answer"]:checked').length > 0;
+            document.getElementById('submit-answer').disabled = !hasSelection;
+            document.getElementById('mobile-submit').disabled = !hasSelection;
           });
           
           optionsContainer.appendChild(optionDiv);
@@ -1149,9 +1170,11 @@
         const textarea = document.createElement('textarea');
         textarea.className = 'textarea h-32';
         textarea.placeholder = 'Type your answer here...';
+        textarea.name = 'answer';
         textarea.addEventListener('input', () => {
-          document.getElementById('submit-answer').disabled = textarea.value.trim() === '';
-          document.getElementById('mobile-submit').disabled = textarea.value.trim() === '';
+          const hasText = textarea.value.trim().length > 0;
+          document.getElementById('submit-answer').disabled = !hasText;
+          document.getElementById('mobile-submit').disabled = !hasText;
         });
         optionsContainer.appendChild(textarea);
       }
@@ -1167,17 +1190,57 @@
       return labels[type] || type;
     }
 
+    function restorePreviousAnswer(question, previousAnswer) {
+      if (question.type === 'multiple-choice' || question.type === 'true-false') {
+        const selectedIndex = previousAnswer[0];
+        const optionDiv = document.querySelector(`input[value="${selectedIndex}"]`).closest('.option-enhanced');
+        if (optionDiv) {
+          optionDiv.querySelector('input').checked = true;
+          optionDiv.classList.add('selected');
+          optionDiv.querySelector('.w-3').style.display = 'block';
+        }
+      } else if (question.type === 'multiple-select') {
+        previousAnswer.forEach(answerIndex => {
+          const optionDiv = document.querySelector(`input[value="${answerIndex}"]`).closest('.option-enhanced');
+          if (optionDiv) {
+            const checkbox = optionDiv.querySelector('input');
+            const checkmark = optionDiv.querySelector('svg');
+            checkbox.checked = true;
+            optionDiv.classList.add('selected');
+            checkmark.style.display = 'block';
+            optionDiv.querySelector('.w-6').style.background = 'var(--primary)';
+            optionDiv.querySelector('.w-6').style.borderColor = 'var(--primary)';
+          }
+        });
+      } else if (question.type === 'free-response') {
+        const textarea = document.querySelector('textarea[name="answer"]');
+        if (textarea && previousAnswer[0]) {
+          textarea.value = previousAnswer[0];
+        }
+      }
+    }
+
     function updateNavigationButtons() {
       const isFirst = appState.currentQuestion === 0;
       const isLast = appState.currentQuestion === appState.currentQuiz.questions.length - 1;
       
-      // Previous button
+      // Previous button - always enabled except on first question
       document.getElementById('prev-question-btn').disabled = isFirst;
       document.getElementById('mobile-prev').disabled = isFirst;
       
-      // Next button (only enabled after answer submission)
-      document.getElementById('next-question-btn').disabled = !appState.isAnswerSubmitted || isLast;
-      document.getElementById('mobile-next').disabled = !appState.isAnswerSubmitted || isLast;
+      // Next button - enabled after answer submission or if going to next question
+      const canGoNext = appState.isAnswerSubmitted || appState.currentQuestion < appState.currentQuiz.questions.length - 1;
+      document.getElementById('next-question-btn').disabled = !canGoNext;
+      document.getElementById('mobile-next').disabled = !canGoNext;
+      
+      // Update button text for last question
+      if (isLast && appState.isAnswerSubmitted) {
+        document.getElementById('next-question-btn').textContent = 'Finish Quiz';
+        document.getElementById('mobile-next').textContent = 'Finish Quiz';
+      } else {
+        document.getElementById('next-question-btn').textContent = 'Next →';
+        document.getElementById('mobile-next').textContent = 'Next →';
+      }
     }
 
     function submitAnswer() {
@@ -1198,8 +1261,10 @@
           const selected = document.querySelectorAll('input[name="answer"]:checked');
           answer = Array.from(selected).map(input => parseInt(input.value));
         } else if (question.type === 'free-response') {
-          const textarea = document.querySelector('textarea');
-          answer = [textarea.value];
+          const textarea = document.querySelector('textarea[name="answer"]');
+          if (textarea && textarea.value.trim()) {
+            answer = [textarea.value.trim()];
+          }
         }
 
         const isCorrect = checkAnswer(question, answer);
@@ -1448,11 +1513,13 @@
     });
     
     document.getElementById('next-question-btn').addEventListener('click', () => {
-      if (appState.currentQuestion < appState.currentQuiz.questions.length - 1) {
-        appState.currentQuestion++;
-        loadQuestion();
-      } else {
-        showResults();
+      if (appState.isAnswerSubmitted) {
+        if (appState.currentQuestion < appState.currentQuiz.questions.length - 1) {
+          appState.currentQuestion++;
+          loadQuestion();
+        } else {
+          showResults();
+        }
       }
     });
     
