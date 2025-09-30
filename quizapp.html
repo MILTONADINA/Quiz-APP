@@ -544,8 +544,16 @@
           <!-- Feedback will be shown here -->
         </div>
 
+        <!-- Quiz Info -->
+        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+          <div class="flex justify-between items-center text-sm text-gray-600">
+            <span>Quiz: <strong id="quiz-title">Database Fundamentals</strong></span>
+            <span>Time Remaining: <strong id="total-time-remaining">15:00</strong></span>
+          </div>
+        </div>
+
         <!-- Action Buttons -->
-        <div class="flex gap-3 mb-4">
+        <div class="flex gap-3">
           <button id="submit-answer" class="btn btn-primary flex-1" disabled>
             <span id="submit-text">Submit Answer</span>
             <div id="submit-loading" class="loading" style="display: none;"></div>
@@ -553,14 +561,6 @@
           <button id="next-question" class="btn btn-neutral flex-1" style="display: none;">
             Next Question →
           </button>
-        </div>
-
-        <!-- Quiz Info -->
-        <div class="bg-gray-50 rounded-lg p-4">
-          <div class="flex justify-between items-center text-sm text-gray-600">
-            <span>Quiz: <strong id="quiz-title">Database Fundamentals</strong></span>
-            <span>Time Remaining: <strong id="total-time-remaining">15:00</strong></span>
-          </div>
         </div>
       </div>
 
@@ -821,7 +821,11 @@
         </div>
         
         <button id="view-individual" class="btn btn-neutral w-full mb-3">View Individual Responses (Private)</button>
-        <button id="exit-live-quiz" class="btn btn-primary w-full">Exit</button>
+        <button id="exit-live-quiz" class="btn btn-primary w-full mb-3">Exit</button>
+        
+        <div class="text-center">
+          <button id="back-to-results-mgmt" class="btn btn-neutral">← Back to Quiz Management</button>
+        </div>
       </div>
     </div>
 
@@ -928,9 +932,16 @@
 
     // Utility Functions
     function showPage(pageId) {
+      console.log('Showing page:', pageId);
       document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-      document.getElementById(pageId).classList.add('active');
-      appState.currentPage = pageId;
+      const targetPage = document.getElementById(pageId);
+      if (targetPage) {
+        targetPage.classList.add('active');
+        appState.currentPage = pageId;
+        console.log('Page shown successfully:', pageId);
+      } else {
+        console.error('Page not found:', pageId);
+      }
     }
 
     function showUserInfo(user) {
@@ -978,9 +989,15 @@
         const username = document.getElementById('prof-username').value;
         const password = document.getElementById('prof-password').value;
         
-        if (username && password) {
-          showUserInfo({ name: username, type: 'professor' });
+        console.log('Professor login attempt:', username, password);
+        
+        if (username === 'prof' && password === '123') {
+          console.log('Professor login successful');
+          showUserInfo({ name: 'Dr. Smith', type: 'professor' });
           showPage('professor-home');
+        } else {
+          console.log('Professor login failed');
+          alert('Invalid credentials. Try prof/123 for demo.');
         }
       });
 
@@ -1005,11 +1022,26 @@
       });
 
       // Quiz management
-      document.getElementById('quiz-management').addEventListener('click', () => showPage('quiz-management'));
-      document.getElementById('create-quiz').addEventListener('click', () => showPage('create-quiz-page'));
-      document.getElementById('start-live-quiz').addEventListener('click', () => showPage('live-quiz-control'));
-      document.getElementById('search-edit-quiz').addEventListener('click', () => showPage('quiz-management'));
-      document.getElementById('view-results').addEventListener('click', () => showPage('final-results'));
+      document.getElementById('quiz-management').addEventListener('click', () => {
+        console.log('Quiz management clicked');
+        showPage('quiz-management');
+      });
+      document.getElementById('create-quiz').addEventListener('click', () => {
+        console.log('Create quiz clicked');
+        showPage('create-quiz-page');
+      });
+      document.getElementById('start-live-quiz').addEventListener('click', () => {
+        console.log('Start live quiz clicked');
+        showPage('live-quiz-control');
+      });
+      document.getElementById('search-edit-quiz').addEventListener('click', () => {
+        console.log('Search edit quiz clicked');
+        showPage('quiz-management');
+      });
+      document.getElementById('view-results').addEventListener('click', () => {
+        console.log('View results clicked');
+        showPage('final-results');
+      });
 
       // Logout
       document.getElementById('logout-btn').addEventListener('click', () => {
@@ -1038,6 +1070,11 @@
 
       // Back to live quiz management
       document.getElementById('back-to-live-mgmt').addEventListener('click', () => {
+        showPage('quiz-management');
+      });
+
+      // Back to results management
+      document.getElementById('back-to-results-mgmt').addEventListener('click', () => {
         showPage('quiz-management');
       });
 
