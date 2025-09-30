@@ -743,6 +743,10 @@
             <button type="button" id="cancel-create" class="btn btn-neutral flex-1">Cancel</button>
           </div>
         </form>
+        
+        <div class="mt-6 text-center">
+          <button id="back-to-quiz-mgmt" class="btn btn-neutral">← Back to Quiz Management</button>
+        </div>
       </div>
     </div>
 
@@ -768,8 +772,12 @@
 
         <button id="end-quiz" class="btn btn-danger w-full mb-4">End Quiz</button>
         
-        <div class="text-center bg-gray-100 rounded-xl p-3">
+        <div class="text-center bg-gray-100 rounded-xl p-3 mb-4">
           <span id="connected-students">32 students connected</span>
+        </div>
+        
+        <div class="text-center">
+          <button id="back-to-live-mgmt" class="btn btn-neutral">← Back to Quiz Management</button>
         </div>
       </div>
     </div>
@@ -869,6 +877,50 @@
             options: ["True", "False"],
             correct: 1,
             timer: 2
+          }
+        ]
+      },
+      2: {
+        id: 2,
+        title: "Math Quiz #3",
+        questions: [
+          {
+            id: 1,
+            type: "multiple-choice",
+            question: "What is 15 + 27?",
+            options: ["40", "42", "41", "43"],
+            correct: 1,
+            timer: 2
+          },
+          {
+            id: 2,
+            type: "multiple-choice",
+            question: "What is the square root of 64?",
+            options: ["6", "7", "8", "9"],
+            correct: 2,
+            timer: 2
+          }
+        ]
+      },
+      3: {
+        id: 3,
+        title: "History Review",
+        questions: [
+          {
+            id: 1,
+            type: "multiple-choice",
+            question: "When did World War II end?",
+            options: ["1944", "1945", "1946", "1947"],
+            correct: 1,
+            timer: 3
+          },
+          {
+            id: 2,
+            type: "free-response",
+            question: "Explain the causes of World War I.",
+            options: [],
+            correct: 0,
+            timer: 5
           }
         ]
       }
@@ -977,6 +1029,16 @@
       // Professor back navigation
       document.getElementById('back-to-prof-home').addEventListener('click', () => {
         showPage('professor-home');
+      });
+
+      // Back to quiz management
+      document.getElementById('back-to-quiz-mgmt').addEventListener('click', () => {
+        showPage('quiz-management');
+      });
+
+      // Back to live quiz management
+      document.getElementById('back-to-live-mgmt').addEventListener('click', () => {
+        showPage('quiz-management');
       });
 
       // Cancel create quiz
@@ -1384,8 +1446,11 @@
         return answer[0] === question.correct;
       } else if (question.type === 'multiple-select') {
         return JSON.stringify(answer.sort()) === JSON.stringify(question.correct.sort());
+      } else if (question.type === 'free-response') {
+        // For demo purposes, free response is always correct if they wrote something
+        return answer.length > 0 && answer[0].trim().length > 0;
       }
-      return true; // Free response always correct for demo
+      return false; // Default to incorrect
     }
 
     function showResults() {
