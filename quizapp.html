@@ -554,9 +554,37 @@
       transition: transform 0.3s ease;
     }
 
-    .notification-toast.show {
-      transform: translateX(0);
-    }
+     .notification-toast.show {
+       transform: translateX(0);
+     }
+
+     /* Word Cloud Styling */
+     .word-cloud {
+       display: flex;
+       flex-wrap: wrap;
+       gap: 0.5rem;
+       padding: 1rem;
+       background: #f8f9fa;
+       border-radius: 12px;
+       margin: 1rem 0;
+     }
+
+     .word-cloud-item {
+       background: var(--primary);
+       color: white;
+       padding: 0.5rem 1rem;
+       border-radius: 20px;
+       font-size: 0.875rem;
+       font-weight: 500;
+       margin: 0.25rem;
+       display: inline-block;
+     }
+
+     .word-cloud-item.size-1 { font-size: 0.75rem; }
+     .word-cloud-item.size-2 { font-size: 0.875rem; }
+     .word-cloud-item.size-3 { font-size: 1rem; }
+     .word-cloud-item.size-4 { font-size: 1.125rem; }
+     .word-cloud-item.size-5 { font-size: 1.25rem; }
 
     /* Responsive design */
     @media (max-width: 768px) {
@@ -711,18 +739,6 @@
 
     <!-- Quiz Question Page -->
     <div id="quiz-question" class="page">
-      <!-- Navigation Buttons -->
-      <button id="prev-question-btn" class="nav-button prev" disabled>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="15,18 9,12 15,6"></polyline>
-        </svg>
-      </button>
-      <button id="next-question-btn" class="nav-button next" disabled>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="9,18 15,12 9,6"></polyline>
-        </svg>
-      </button>
-
       <div class="quiz-card">
         <!-- Enhanced Question Navigation -->
         <div class="question-nav">
@@ -767,17 +783,27 @@
           </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex gap-3">
-          <button id="submit-answer" class="btn btn-primary flex-1" disabled>
-            <span id="submit-text">Submit Answer</span>
-            <div id="submit-loading" class="loading" style="display: none;"></div>
-          </button>
-          <button id="next-question" class="btn btn-neutral flex-1" style="display: none;">
-            Next Question →
-          </button>
-        </div>
-      </div>
+         <!-- Action Buttons -->
+         <div class="flex gap-3 mb-4">
+           <button id="submit-answer" class="btn btn-primary flex-1" disabled>
+             <span id="submit-text">Submit Answer</span>
+             <div id="submit-loading" class="loading" style="display: none;"></div>
+           </button>
+           <button id="next-question" class="btn btn-neutral flex-1" style="display: none;">
+             Next Question →
+           </button>
+         </div>
+         
+         <!-- Navigation Buttons -->
+         <div class="flex gap-3 justify-between">
+           <button id="prev-question-btn" class="btn btn-neutral" disabled>
+             ← Previous
+           </button>
+           <button id="next-question-btn" class="btn btn-primary" disabled>
+             Next →
+           </button>
+         </div>
+       </div>
 
       <!-- Mobile Navigation -->
       <div class="mobile-nav">
@@ -1008,24 +1034,32 @@
       </div>
     </div>
 
-    <!-- Live Results Page -->
-    <div id="live-results" class="page">
-      <div class="quiz-card">
-        <h2 class="text-2xl font-bold mb-6">Live Results</h2>
-        
-        <div class="question-container mb-6">
-          <h3 class="text-lg font-medium" id="live-question-text">What is a primary key in a database?</h3>
-        </div>
+     <!-- Live Results Page -->
+     <div id="live-results" class="page">
+       <div class="quiz-card">
+         <h2 class="text-2xl font-bold mb-6">Live Results</h2>
+         
+         <div class="question-container mb-6">
+           <h3 class="text-lg font-medium" id="live-question-text">What is a primary key in a database?</h3>
+         </div>
 
-        <div id="live-results-content">
-          <!-- Live results will be dynamically generated -->
-        </div>
+         <div id="live-results-content">
+           <!-- Live results will be dynamically generated -->
+         </div>
 
-        <div class="text-center bg-gray-100 rounded-xl p-3 mt-4">
-          <span id="response-count">32 students responded</span>
-        </div>
-      </div>
-    </div>
+         <!-- Word Cloud for Free Response Questions -->
+         <div id="word-cloud-container" class="mb-6" style="display: none;">
+           <h3 class="text-lg font-semibold mb-3">📊 Word Cloud - Student Responses</h3>
+           <div id="word-cloud" class="word-cloud">
+             <!-- Word cloud will be generated here -->
+           </div>
+         </div>
+
+         <div class="text-center bg-gray-100 rounded-xl p-3 mt-4">
+           <span id="response-count">32 students responded</span>
+         </div>
+       </div>
+     </div>
 
     <!-- Final Results Page -->
     <div id="final-results" class="page">
@@ -1346,15 +1380,15 @@
           <div class="analytics-card">
             <h3 class="text-lg font-semibold mb-3">🎨 Theme & Appearance</h3>
             <div class="space-y-3">
-              <div>
-                <label class="block text-sm font-medium mb-2">Theme</label>
-                <select class="select">
-                  <option>Default</option>
-                  <option>Dark Mode</option>
-                  <option>High Contrast</option>
-                  <option>Color Blind Friendly</option>
-                </select>
-              </div>
+               <div>
+                 <label class="block text-sm font-medium mb-2">Theme</label>
+                 <select id="theme-selector" class="select" onchange="changeTheme(this.value)">
+                   <option value="default">Default</option>
+                   <option value="dark">Dark Mode</option>
+                   <option value="high-contrast">High Contrast</option>
+                   <option value="colorblind">Color Blind Friendly</option>
+                 </select>
+               </div>
               <div>
                 <label class="block text-sm font-medium mb-2">Font Size</label>
                 <input type="range" class="w-full" min="12" max="24" value="16">
@@ -1854,50 +1888,71 @@
           
           optionsContainer.appendChild(optionDiv);
         });
-      } else if (question.type === 'multiple-select') {
-        question.options.forEach((option, index) => {
-          const optionDiv = document.createElement('div');
-          optionDiv.className = 'option-enhanced';
-          optionDiv.innerHTML = `
-            <input type="checkbox" name="answer" value="${index}" class="mr-3" style="display: none;">
-            <div class="flex items-center w-full">
-              <div class="w-6 h-6 border-2 border-gray-300 rounded mr-3 flex items-center justify-center">
-                <svg class="w-4 h-4 text-white" style="display: none;" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                </svg>
-              </div>
-              <span class="flex-1">${option}</span>
-            </div>
-          `;
-          
-          optionDiv.addEventListener('click', () => {
-            if (appState.isAnswerSubmitted) return;
-            
-            const checkbox = optionDiv.querySelector('input');
-            const checkmark = optionDiv.querySelector('svg');
-            
-            checkbox.checked = !checkbox.checked;
-            
-            if (checkbox.checked) {
-              optionDiv.classList.add('selected');
-              checkmark.style.display = 'block';
-              optionDiv.querySelector('.w-6').style.background = 'var(--primary)';
-              optionDiv.querySelector('.w-6').style.borderColor = 'var(--primary)';
-            } else {
-              optionDiv.classList.remove('selected');
-              checkmark.style.display = 'none';
-              optionDiv.querySelector('.w-6').style.background = 'transparent';
-              optionDiv.querySelector('.w-6').style.borderColor = '#D1D5DB';
-            }
-            
-            // Enable submit button if at least one option is selected
-            const hasSelection = document.querySelectorAll('input[name="answer"]:checked').length > 0;
-            document.getElementById('submit-answer').disabled = !hasSelection;
-            document.getElementById('mobile-submit').disabled = !hasSelection;
-          });
-          
-          optionsContainer.appendChild(optionDiv);
-        });
+       } else if (question.type === 'multiple-select') {
+         question.options.forEach((option, index) => {
+           const optionDiv = document.createElement('div');
+           optionDiv.className = 'option-enhanced';
+           optionDiv.innerHTML = `
+             <input type="checkbox" name="answer" value="${index}" class="mr-3" style="display: none;">
+             <div class="flex items-center w-full">
+               <div class="w-6 h-6 border-2 border-gray-300 rounded mr-3 flex items-center justify-center">
+                 <svg class="w-4 h-4 text-white" style="display: none;" fill="currentColor" viewBox="0 0 20 20">
+                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                 </svg>
+               </div>
+               <span class="flex-1">${option}</span>
+             </div>
+           `;
+           
+           optionDiv.addEventListener('click', () => {
+             if (appState.isAnswerSubmitted) return;
+             
+             const checkbox = optionDiv.querySelector('input');
+             const checkmark = optionDiv.querySelector('svg');
+             
+             checkbox.checked = !checkbox.checked;
+             
+             if (checkbox.checked) {
+               optionDiv.classList.add('selected');
+               checkmark.style.display = 'block';
+               optionDiv.querySelector('.w-6').style.background = 'var(--primary)';
+               optionDiv.querySelector('.w-6').style.borderColor = 'var(--primary)';
+             } else {
+               optionDiv.classList.remove('selected');
+               checkmark.style.display = 'none';
+               optionDiv.querySelector('.w-6').style.background = 'transparent';
+               optionDiv.querySelector('.w-6').style.borderColor = '#D1D5DB';
+             }
+             
+             // Enable submit button if at least one option is selected
+             const hasSelection = document.querySelectorAll('input[name="answer"]:checked').length > 0;
+             document.getElementById('submit-answer').disabled = !hasSelection;
+             document.getElementById('mobile-submit').disabled = !hasSelection;
+             
+             // Also enable the multiple select submit button
+             const multipleSelectSubmit = document.getElementById('multiple-select-submit');
+             if (multipleSelectSubmit) {
+               multipleSelectSubmit.disabled = !hasSelection;
+             }
+           });
+           
+           optionsContainer.appendChild(optionDiv);
+         });
+         
+         // Add submit button for multiple select questions
+         const submitContainer = document.createElement('div');
+         submitContainer.className = 'mt-4';
+         submitContainer.innerHTML = `
+           <button id="multiple-select-submit" class="btn btn-primary w-full" disabled>
+             Submit Selected Answers
+           </button>
+         `;
+         optionsContainer.appendChild(submitContainer);
+         
+         // Add event listener for the submit button
+         document.getElementById('multiple-select-submit').addEventListener('click', () => {
+           submitAnswer();
+         });
       } else if (question.type === 'free-response') {
         const textarea = document.createElement('textarea');
         textarea.className = 'textarea h-32';
@@ -2770,10 +2825,59 @@ function fibonacci(n) {
       // Add to appropriate location
     }
 
-    function setupImageSupport() {
-      // Image upload and display support
-      console.log('🖼️ Image support enabled');
-    }
+     function setupImageSupport() {
+       // Image upload and display support
+       console.log('🖼️ Image support enabled');
+     }
+
+     // Word Cloud Generation
+     function generateWordCloud(responses) {
+       const wordCloudContainer = document.getElementById('word-cloud-container');
+       const wordCloud = document.getElementById('word-cloud');
+       
+       if (!responses || responses.length === 0) {
+         wordCloudContainer.style.display = 'none';
+         return;
+       }
+       
+       // Extract words from responses
+       const words = {};
+       responses.forEach(response => {
+         if (response && response.trim()) {
+           const wordsInResponse = response.toLowerCase()
+             .replace(/[^\w\s]/g, '')
+             .split(/\s+/)
+             .filter(word => word.length > 2);
+           
+           wordsInResponse.forEach(word => {
+             words[word] = (words[word] || 0) + 1;
+           });
+         }
+       });
+       
+       // Sort words by frequency
+       const sortedWords = Object.entries(words)
+         .sort((a, b) => b[1] - a[1])
+         .slice(0, 20); // Top 20 words
+       
+       if (sortedWords.length === 0) {
+         wordCloudContainer.style.display = 'none';
+         return;
+       }
+       
+       // Generate word cloud HTML
+       wordCloud.innerHTML = '';
+       sortedWords.forEach(([word, count]) => {
+         const size = Math.min(5, Math.max(1, Math.ceil(count / 2)));
+         const wordElement = document.createElement('span');
+         wordElement.className = `word-cloud-item size-${size}`;
+         wordElement.textContent = word;
+         wordElement.title = `Used ${count} times`;
+         wordCloud.appendChild(wordElement);
+       });
+       
+       wordCloudContainer.style.display = 'block';
+     }
 
     // Collaborative Features
     function initializeCollaboration() {
@@ -2814,17 +2918,8 @@ function fibonacci(n) {
     }
 
     function setupThemeSelector() {
-      const themeSelector = document.createElement('div');
-      themeSelector.className = 'theme-selector';
-      themeSelector.innerHTML = `
-        <select onchange="changeTheme(this.value)">
-          <option value="default">Default</option>
-          <option value="dark">Dark Mode</option>
-          <option value="high-contrast">High Contrast</option>
-          <option value="colorblind">Color Blind Friendly</option>
-        </select>
-      `;
-      document.body.appendChild(themeSelector);
+      // Don't create theme selector automatically - let settings page handle it
+      console.log('Theme selector setup complete');
     }
 
     function changeTheme(theme) {
@@ -2834,7 +2929,37 @@ function fibonacci(n) {
     }
 
     function applyTheme(theme) {
-      document.body.className = `theme-${theme}`;
+      // Remove existing theme classes
+      document.body.classList.remove('theme-default', 'theme-dark', 'theme-high-contrast', 'theme-colorblind');
+      
+      // Apply new theme
+      if (theme !== 'default') {
+        document.body.classList.add(`theme-${theme}`);
+      }
+      
+      // Apply theme-specific styles
+      if (theme === 'dark') {
+        document.documentElement.style.setProperty('--bg', '#1a1a1a');
+        document.documentElement.style.setProperty('--card', '#2d2d2d');
+        document.documentElement.style.setProperty('--ink', '#ffffff');
+        document.documentElement.style.setProperty('--muted', '#404040');
+      } else if (theme === 'high-contrast') {
+        document.documentElement.style.setProperty('--bg', '#000000');
+        document.documentElement.style.setProperty('--card', '#ffffff');
+        document.documentElement.style.setProperty('--ink', '#000000');
+        document.documentElement.style.setProperty('--muted', '#666666');
+      } else if (theme === 'colorblind') {
+        document.documentElement.style.setProperty('--primary', '#0066cc');
+        document.documentElement.style.setProperty('--accent', '#cc6600');
+      } else {
+        // Reset to default
+        document.documentElement.style.setProperty('--bg', '#F7F7F8');
+        document.documentElement.style.setProperty('--card', '#FFFFFF');
+        document.documentElement.style.setProperty('--ink', '#111827');
+        document.documentElement.style.setProperty('--muted', '#E5E7EB');
+        document.documentElement.style.setProperty('--primary', '#16A34A');
+        document.documentElement.style.setProperty('--accent', '#EF4444');
+      }
     }
 
     // Initialize all advanced features
