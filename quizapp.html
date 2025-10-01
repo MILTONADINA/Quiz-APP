@@ -1649,23 +1649,31 @@
       document.getElementById('switch-to-prof').addEventListener('click', () => showPage('professor-login'));
       document.getElementById('switch-to-student').addEventListener('click', () => showPage('student-login'));
 
-      // Student navigation
-      document.getElementById('join-new-quiz').addEventListener('click', () => showPage('join-quiz'));
+       // Student navigation
+       document.getElementById('join-new-quiz').addEventListener('click', () => showPage('join-quiz'));
+       
+       // Student quiz cards click handlers - ensure they work properly
+       document.querySelectorAll('[data-quiz-id]').forEach(card => {
+         card.addEventListener('click', (e) => {
+           e.preventDefault();
+           const quizId = parseInt(card.dataset.quizId);
+           console.log('Student quiz clicked:', quizId);
+           if (sampleQuizzes[quizId]) {
+             appState.currentQuiz = sampleQuizzes[quizId];
+             appState.currentQuestion = 0;
+             appState.userAnswers = [];
+             appState.isAnswerSubmitted = false;
+             appState.totalTimeRemaining = 0;
+             showPage('quiz-question');
+             loadQuestion();
+           } else {
+             console.error('Quiz not found:', quizId);
+             showToast('Quiz not available. Please try again.', 'error');
+           }
+         });
+       });
 
-      // Student quiz cards click handlers
-      document.querySelectorAll('[data-quiz-id]').forEach(card => {
-        card.addEventListener('click', () => {
-          const quizId = parseInt(card.dataset.quizId);
-          console.log('Student quiz clicked:', quizId);
-          if (sampleQuizzes[quizId]) {
-            appState.currentQuiz = sampleQuizzes[quizId];
-            appState.currentQuestion = 0;
-            appState.userAnswers = [];
-            showPage('quiz-question');
-            loadQuestion();
-          }
-        });
-      });
+      // Remove duplicate event listeners - handled above
       document.getElementById('join-quiz-form').addEventListener('submit', function(e) {
         e.preventDefault();
         const pin = document.getElementById('quiz-pin').value;
@@ -1751,8 +1759,31 @@
       // Create quiz form
       document.getElementById('create-quiz-form').addEventListener('submit', function(e) {
         e.preventDefault();
-        alert('Quiz question saved! (Demo mode)');
-        showPage('quiz-management');
+        const title = document.getElementById('quiz-title').value;
+        const description = document.getElementById('quiz-description').value;
+        const timeLimit = document.getElementById('time-limit').value;
+        const subject = document.getElementById('quiz-subject').value;
+        
+        if (title && description && subject) {
+          // Create new quiz
+          const newQuiz = {
+            id: Date.now(),
+            title: title,
+            description: description,
+            subject: subject,
+            timeLimit: parseInt(timeLimit) || 30,
+            questions: [],
+            createdAt: new Date()
+          };
+          
+          // Add to sample quizzes
+          sampleQuizzes[newQuiz.id] = newQuiz;
+          
+          showToast('Quiz created successfully!', 'success');
+          showPage('quiz-management');
+        } else {
+          showToast('Please fill in all required fields', 'error');
+        }
       });
 
       // Available quizzes click
@@ -1769,14 +1800,20 @@
     });
 
     // Enhanced Quiz Functions
-    function loadQuestion() {
-      const quiz = appState.currentQuiz;
-      const question = quiz.questions[appState.currentQuestion];
-      
-      // Check if this question was already answered
-      const existingAnswer = appState.userAnswers.find(a => a.questionId === question.id);
-      appState.isAnswerSubmitted = !!existingAnswer;
-      appState.showFeedback = !!existingAnswer;
+     function loadQuestion() {
+       const quiz = appState.currentQuiz;
+       const question = quiz.questions[appState.currentQuestion];
+       
+       if (!question) {
+         console.error('Question not found:', appState.currentQuestion);
+         showToast('Question not found. Please try again.', 'error');
+         return;
+       }
+       
+       // Check if this question was already answered
+       const existingAnswer = appState.userAnswers.find(a => a.questionId === question.id);
+       appState.isAnswerSubmitted = !!existingAnswer;
+       appState.showFeedback = !!existingAnswer;
       
       // Update UI
       document.getElementById('question-counter').textContent = `Q${appState.currentQuestion + 1} of ${quiz.questions.length}`;
@@ -2030,54 +2067,69 @@
       }
     }
 
-    function submitAnswer() {
-      if (appState.isAnswerSubmitted) return;
-      
-      const question = appState.currentQuiz.questions[appState.currentQuestion];
-      let answer = [];
+     function submitAnswer() {
+       if (appState.isAnswerSubmitted) return;
+       
+       const question = appState.currentQuiz.questions[appState.currentQuestion];
+       let answer = [];
 
-      // Show loading state
-      showLoadingState(true);
+       // Show loading state
+       showLoadingState(true);
 
-      // Simulate processing delay
-      setTimeout(() => {
-        if (question.type === 'multiple-choice' || question.type === 'true-false') {
-          const selected = document.querySelector('input[name="answer"]:checked');
-          if (selected) answer = [parseInt(selected.value)];
-        } else if (question.type === 'multiple-select') {
-          const selected = document.querySelectorAll('input[name="answer"]:checked');
-          answer = Array.from(selected).map(input => parseInt(input.value));
-        } else if (question.type === 'free-response') {
-          const textarea = document.querySelector('textarea[name="answer"]');
-          if (textarea && textarea.value.trim()) {
-            answer = [textarea.value.trim()];
-          }
-        }
+       // Simulate processing delay
+       setTimeout(() => {
+         if (question.type === 'multiple-choice' || question.type === 'true-false') {
+           const selected = document.querySelector('input[name="answer"]:checked');
+           if (selected) {
+             answer = [parseInt(selected.value)];
+           } else {
+             showLoadingState(false);
+             showToast('Please select an answer before submitting.', 'error');
+             return;
+           }
+         } else if (question.type === 'multiple-select') {
+           const selected = document.querySelectorAll('input[name="answer"]:checked');
+           if (selected.length === 0) {
+             showLoadingState(false);
+             showToast('Please select at least one answer before submitting.', 'error');
+             return;
+           }
+           answer = Array.from(selected).map(input => parseInt(input.value));
+         } else if (question.type === 'free-response') {
+           const textarea = document.querySelector('textarea[name="answer"]');
+           if (textarea && textarea.value.trim()) {
+             answer = [textarea.value.trim()];
+           } else {
+             showLoadingState(false);
+             showToast('Please enter your answer before submitting.', 'error');
+             return;
+           }
+         }
 
-        const isCorrect = checkAnswer(question, answer);
-        
-        appState.userAnswers.push({
-          questionId: question.id,
-          answer: answer,
-          correct: isCorrect,
-          submittedAt: new Date()
-        });
+         const isCorrect = checkAnswer(question, answer);
+         
+         appState.userAnswers.push({
+           questionId: question.id,
+           answer: answer,
+           correct: isCorrect,
+           submittedAt: new Date()
+         });
 
-        appState.isAnswerSubmitted = true;
-        
-        // Show feedback
-        showAnswerFeedback(question, answer, isCorrect);
-        
-        // Update UI
-        updateUIAfterSubmission();
-        
-        showLoadingState(false);
-        
-        // Show success toast
-        showToast(isCorrect ? 'Correct!' : 'Incorrect. Better luck next time!', isCorrect ? 'success' : 'error');
-        
-      }, 1000);
-    }
+         appState.isAnswerSubmitted = true;
+         
+         // Show feedback
+         showAnswerFeedback(question, answer, isCorrect);
+         
+         // Update UI
+         updateUIAfterSubmission();
+         
+         showLoadingState(false);
+         
+         // Show success toast
+         showToast(isCorrect ? 'Correct!' : 'Incorrect. Better luck next time!', isCorrect ? 'success' : 'error');
+         
+       }, 1000);
+     }
 
     function showLoadingState(show) {
       const submitBtn = document.getElementById('submit-answer');
@@ -2415,14 +2467,14 @@
       showPage('final-results');
     });
 
-    // Export functions
-    document.getElementById('export-pdf').addEventListener('click', () => {
-      alert('PDF export functionality would be implemented here');
-    });
+     // Export functions
+     document.getElementById('export-pdf').addEventListener('click', () => {
+       exportToPDF();
+     });
 
-    document.getElementById('export-csv').addEventListener('click', () => {
-      alert('CSV export functionality would be implemented here');
-    });
+     document.getElementById('export-csv').addEventListener('click', () => {
+       exportToCSV();
+     });
 
     document.getElementById('exit-live-quiz').addEventListener('click', () => {
       showPage('professor-home');
@@ -2438,48 +2490,101 @@
       updateTimeAnalytics();
     }
 
-    function generatePerformanceChart() {
-      const canvas = document.getElementById('performanceCanvas');
-      if (!canvas) return;
-      
-      const ctx = canvas.getContext('2d');
-      const data = [65, 72, 78, 85, 82, 88, 91];
-      const labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7'];
-      
-      // Simple chart drawing
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = '#16A34A';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      
-      data.forEach((value, index) => {
-        const x = (index / (data.length - 1)) * canvas.width;
-        const y = canvas.height - (value / 100) * canvas.height;
-        if (index === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
-    }
+     function generatePerformanceChart() {
+       const canvas = document.getElementById('performanceCanvas');
+       if (!canvas) return;
+       
+       // Set canvas size
+       canvas.width = 300;
+       canvas.height = 200;
+       
+       const ctx = canvas.getContext('2d');
+       const data = [65, 72, 78, 85, 82, 88, 91];
+       const labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7'];
+       
+       // Clear canvas
+       ctx.clearRect(0, 0, canvas.width, canvas.height);
+       
+       // Draw grid
+       ctx.strokeStyle = '#e5e7eb';
+       ctx.lineWidth = 1;
+       for (let i = 0; i <= 10; i++) {
+         const y = (canvas.height / 10) * i;
+         ctx.beginPath();
+         ctx.moveTo(0, y);
+         ctx.lineTo(canvas.width, y);
+         ctx.stroke();
+       }
+       
+       // Draw performance line
+       ctx.strokeStyle = '#16A34A';
+       ctx.lineWidth = 3;
+       ctx.beginPath();
+       
+       data.forEach((value, index) => {
+         const x = (index / (data.length - 1)) * (canvas.width - 40) + 20;
+         const y = canvas.height - (value / 100) * (canvas.height - 40) - 20;
+         if (index === 0) ctx.moveTo(x, y);
+         else ctx.lineTo(x, y);
+       });
+       ctx.stroke();
+       
+       // Draw data points
+       ctx.fillStyle = '#16A34A';
+       data.forEach((value, index) => {
+         const x = (index / (data.length - 1)) * (canvas.width - 40) + 20;
+         const y = canvas.height - (value / 100) * (canvas.height - 40) - 20;
+         ctx.beginPath();
+         ctx.arc(x, y, 4, 0, 2 * Math.PI);
+         ctx.fill();
+       });
+     }
 
-    function generateDifficultyChart() {
-      const canvas = document.getElementById('difficultyCanvas');
-      if (!canvas) return;
-      
-      const ctx = canvas.getContext('2d');
-      const data = [15, 35, 30, 20]; // Easy, Medium, Hard, Expert
-      const colors = ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
-      
-      let startAngle = 0;
-      data.forEach((value, index) => {
-        const sliceAngle = (value / 100) * 2 * Math.PI;
-        ctx.beginPath();
-        ctx.arc(canvas.width/2, canvas.height/2, 80, startAngle, startAngle + sliceAngle);
-        ctx.lineTo(canvas.width/2, canvas.height/2);
-        ctx.fillStyle = colors[index];
-        ctx.fill();
-        startAngle += sliceAngle;
-      });
-    }
+     function generateDifficultyChart() {
+       const canvas = document.getElementById('difficultyCanvas');
+       if (!canvas) return;
+       
+       // Set canvas size
+       canvas.width = 300;
+       canvas.height = 200;
+       
+       const ctx = canvas.getContext('2d');
+       const data = [15, 35, 30, 20]; // Easy, Medium, Hard, Expert
+       const colors = ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+       const labels = ['Easy', 'Medium', 'Hard', 'Expert'];
+       
+       // Clear canvas
+       ctx.clearRect(0, 0, canvas.width, canvas.height);
+       
+       const centerX = canvas.width / 2;
+       const centerY = canvas.height / 2;
+       const radius = 60;
+       
+       let startAngle = 0;
+       data.forEach((value, index) => {
+         const sliceAngle = (value / 100) * 2 * Math.PI;
+         
+         // Draw slice
+         ctx.beginPath();
+         ctx.moveTo(centerX, centerY);
+         ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+         ctx.closePath();
+         ctx.fillStyle = colors[index];
+         ctx.fill();
+         
+         // Draw label
+         const labelAngle = startAngle + sliceAngle / 2;
+         const labelX = centerX + Math.cos(labelAngle) * (radius + 20);
+         const labelY = centerY + Math.sin(labelAngle) * (radius + 20);
+         
+         ctx.fillStyle = '#333';
+         ctx.font = '12px Arial';
+         ctx.textAlign = 'center';
+         ctx.fillText(labels[index], labelX, labelY);
+         
+         startAngle += sliceAngle;
+       });
+     }
 
     function updateTimeAnalytics() {
       // Update time analytics display
@@ -2543,18 +2648,57 @@
     function loadUsers() {
       const users = {
         professors: [
-          { name: 'Dr. Smith', status: 'Active', role: 'Professor' },
-          { name: 'Prof. Johnson', status: 'Active', role: 'Professor' },
-          { name: 'Dr. Williams', status: 'Active', role: 'Professor' }
+          { id: 1, name: 'Dr. Smith', email: 'smith@university.edu', status: 'Active', role: 'Professor', lastActive: '1 hour ago' },
+          { id: 2, name: 'Prof. Johnson', email: 'johnson@university.edu', status: 'Active', role: 'Professor', lastActive: '30 min ago' },
+          { id: 3, name: 'Dr. Williams', email: 'williams@university.edu', status: 'Active', role: 'Professor', lastActive: '2 hours ago' }
         ],
         students: [
-          { name: 'John Doe', status: 'Online', role: 'Student' },
-          { name: 'Jane Smith', status: 'Online', role: 'Student' },
-          { name: 'Mike Johnson', status: 'Offline', role: 'Student' }
+          { id: 4, name: 'John Doe', email: 'john@student.edu', status: 'Online', role: 'Student', lastActive: '5 min ago' },
+          { id: 5, name: 'Jane Smith', email: 'jane@student.edu', status: 'Online', role: 'Student', lastActive: '10 min ago' },
+          { id: 6, name: 'Mike Johnson', email: 'mike@student.edu', status: 'Offline', role: 'Student', lastActive: '2 days ago' },
+          { id: 7, name: 'Sarah Wilson', email: 'sarah@student.edu', status: 'Online', role: 'Student', lastActive: '1 hour ago' }
         ]
       };
       
       appState.users = users;
+      
+      // Update the UI if we're on the user management page
+      if (document.getElementById('users-list')) {
+        updateUsersList();
+      }
+    }
+    
+    function updateUsersList() {
+      const usersContainer = document.getElementById('users-list');
+      if (!usersContainer || !appState.users) return;
+      
+      const allUsers = [...appState.users.professors, ...appState.users.students];
+      
+      usersContainer.innerHTML = allUsers.map(user => `
+        <div class="user-item p-4 border rounded-lg hover:bg-gray-50 mb-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                <span class="text-sm font-medium">${user.name.split(' ').map(n => n[0]).join('')}</span>
+              </div>
+              <div>
+                <h3 class="font-medium">${user.name}</h3>
+                <p class="text-sm text-gray-600">${user.email}</p>
+                <p class="text-xs text-gray-500">Last active: ${user.lastActive}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="badge ${user.role === 'Student' ? 'badge-success' : 'badge-primary'}">${user.role}</span>
+              <span class="badge ${user.status === 'Active' || user.status === 'Online' ? 'badge-success' : 'badge-error'}">${user.status}</span>
+              <button class="btn btn-sm btn-neutral" onclick="editUser(${user.id})">Edit</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function editUser(userId) {
+      showToast(`Edit user ${userId} functionality would be implemented here`, 'info');
     }
 
     function setupRoleManagement() {
@@ -2571,12 +2715,48 @@
 
     function loadLeaderboard() {
       const leaderboard = [
-        { rank: 1, name: 'Alice Johnson', points: 2450, badge: '🥇 Gold' },
-        { rank: 2, name: 'Bob Smith', points: 2380, badge: '🥈 Silver' },
-        { rank: 3, name: 'Carol Davis', points: 2210, badge: '🥉 Bronze' }
+        { rank: 1, name: 'Alice Johnson', points: 2450, badge: '🥇 Gold', level: 5, streak: 7, achievements: 8 },
+        { rank: 2, name: 'Bob Smith', points: 2380, badge: '🥈 Silver', level: 5, streak: 5, achievements: 6 },
+        { rank: 3, name: 'Carol Davis', points: 2210, badge: '🥉 Bronze', level: 4, streak: 3, achievements: 5 },
+        { rank: 4, name: 'David Wilson', points: 1950, badge: '🏅', level: 4, streak: 2, achievements: 4 },
+        { rank: 5, name: 'Emma Brown', points: 1800, badge: '🏅', level: 3, streak: 1, achievements: 3 }
       ];
       
       appState.gamification.leaderboard = leaderboard;
+      
+      // Update UI if on gamification page
+      if (document.getElementById('leaderboard-list')) {
+        updateLeaderboardUI();
+      }
+    }
+    
+    function updateLeaderboardUI() {
+      const leaderboardContainer = document.getElementById('leaderboard-list');
+      if (!leaderboardContainer || !appState.gamification.leaderboard) return;
+      
+      leaderboardContainer.innerHTML = appState.gamification.leaderboard.map(user => `
+        <div class="leaderboard-item p-4 border rounded-lg mb-3 ${user.rank <= 3 ? 'bg-yellow-50 border-yellow-200' : ''}">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                user.rank === 1 ? 'bg-yellow-500' : 
+                user.rank === 2 ? 'bg-gray-400' : 
+                user.rank === 3 ? 'bg-orange-500' : 'bg-gray-300'
+              }">
+                ${user.rank}
+              </div>
+              <div>
+                <h3 class="font-medium">${user.name}</h3>
+                <p class="text-sm text-gray-600">Level ${user.level} • ${user.points} points</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm text-gray-600">${user.streak} day streak</div>
+              <div class="text-sm text-gray-600">${user.achievements} achievements</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
     }
 
     function updateAchievements() {
@@ -2897,10 +3077,80 @@ function fibonacci(n) {
       console.log('👀 Peer review enabled');
     }
 
-    function setupTeamCompetitions() {
-      // Team competition features
-      console.log('🏆 Team competitions enabled');
-    }
+     function setupTeamCompetitions() {
+       // Team competition features
+       console.log('🏆 Team competitions enabled');
+     }
+
+     // Export Functions
+     function exportToPDF() {
+       const quiz = appState.currentQuiz;
+       if (!quiz) {
+         showToast('No quiz data to export', 'error');
+         return;
+       }
+
+       const content = `
+         Quiz Results Report
+         ==================
+         
+         Quiz: ${quiz.title}
+         Date: ${new Date().toLocaleDateString()}
+         
+         Question Breakdown:
+         ${quiz.questions.map((q, i) => `${i + 1}. ${q.question}`).join('\n')}
+         
+         Class Average: 78%
+         Total Responses: 32 students
+         
+         Generated by QuizMaster Pro
+       `;
+
+       // Create and download file
+       const blob = new Blob([content], { type: 'text/plain' });
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = `${quiz.title}_results.txt`;
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+       URL.revokeObjectURL(url);
+       
+       showToast('Results exported successfully!', 'success');
+     }
+
+     function exportToCSV() {
+       const quiz = appState.currentQuiz;
+       if (!quiz) {
+         showToast('No quiz data to export', 'error');
+         return;
+       }
+
+       const csvContent = [
+         'Question,Type,Correct Answer,Student Responses,Percentage',
+         ...quiz.questions.map((q, i) => {
+           const correctAnswer = q.type === 'multiple-choice' || q.type === 'true-false' 
+             ? q.options[q.correct] 
+             : q.type === 'multiple-select' 
+             ? q.correct.map(idx => q.options[idx]).join('; ')
+             : 'Text Response';
+           return `${i + 1},${q.type},"${correctAnswer}",32,78%`;
+         })
+       ].join('\n');
+
+       const blob = new Blob([csvContent], { type: 'text/csv' });
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = `${quiz.title}_results.csv`;
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+       URL.revokeObjectURL(url);
+       
+       showToast('CSV exported successfully!', 'success');
+     }
 
     // Theme and Customization
     function initializeThemes() {
@@ -2909,13 +3159,19 @@ function fibonacci(n) {
       setupThemeSelector();
     }
 
-    function loadThemeSettings() {
-      const savedTheme = localStorage.getItem('quizTheme');
-      if (savedTheme) {
-        appState.settings.theme = savedTheme;
-        applyTheme(savedTheme);
-      }
-    }
+     function loadThemeSettings() {
+       const savedTheme = localStorage.getItem('quizTheme');
+       if (savedTheme) {
+         appState.settings.theme = savedTheme;
+         applyTheme(savedTheme);
+         
+         // Update theme selector if it exists
+         const themeSelector = document.getElementById('theme-selector');
+         if (themeSelector) {
+           themeSelector.value = savedTheme;
+         }
+       }
+     }
 
     function setupThemeSelector() {
       // Don't create theme selector automatically - let settings page handle it
