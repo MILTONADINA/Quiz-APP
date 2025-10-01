@@ -678,7 +678,7 @@
         </div>
 
         <div class="mt-6 text-center">
-          <button id="quiz-management" class="btn btn-primary">Quiz Management</button>
+          <button id="quiz-management-btn" class="btn btn-primary">Quiz Management</button>
         </div>
       </div>
     </div>
@@ -1007,6 +1007,21 @@
 
       // Student navigation
       document.getElementById('join-new-quiz').addEventListener('click', () => showPage('join-quiz'));
+
+      // Student quiz cards click handlers
+      document.querySelectorAll('[data-quiz-id]').forEach(card => {
+        card.addEventListener('click', () => {
+          const quizId = parseInt(card.dataset.quizId);
+          console.log('Student quiz clicked:', quizId);
+          if (sampleQuizzes[quizId]) {
+            appState.currentQuiz = sampleQuizzes[quizId];
+            appState.currentQuestion = 0;
+            appState.userAnswers = [];
+            showPage('quiz-question');
+            loadQuestion();
+          }
+        });
+      });
       document.getElementById('join-quiz-form').addEventListener('submit', function(e) {
         e.preventDefault();
         const pin = document.getElementById('quiz-pin').value;
@@ -1022,7 +1037,7 @@
       });
 
       // Quiz management
-      document.getElementById('quiz-management').addEventListener('click', () => {
+      document.getElementById('quiz-management-btn').addEventListener('click', () => {
         console.log('Quiz management clicked');
         showPage('quiz-management');
       });
@@ -1061,6 +1076,14 @@
       // Professor back navigation
       document.getElementById('back-to-prof-home').addEventListener('click', () => {
         showPage('professor-home');
+      });
+
+      // Professor classes click handlers
+      document.querySelectorAll('[data-class-id]').forEach(card => {
+        card.addEventListener('click', () => {
+          console.log('Professor class clicked:', card.dataset.classId);
+          showPage('quiz-management');
+        });
       });
 
       // Back to quiz management
